@@ -1,0 +1,190 @@
+---
+title: "Bike share data"
+output: html_notebook
+---
+
+```{r}
+library(tidyverse)
+library(janitor)
+library(readxl)
+library(skimr)
+library(summarytools)
+library(lubridate)
+```
+
+getting the bike share data connected to r
+```{r}
+dfa = read_excel("DS_bike_share_data.xlsx")
+```
+
+Filtering the data to remove bad values of duration
+
+```{r}
+dfb <- dfa %>%
+  filter(Duration > 0, Duration< 1440)
+```
+
+creating histograms of the data
+
+```{r}
+hist(dfb$Duration, breaks=120)
+```
+using facet_wrap to create a histogram for each day of the week
+
+```{r}
+dfb %>% ggplot(aes(x=Duration)) + geom_histogram(bins=100, orientation = "x") +
+  facet_wrap(~Day_of_week)
+```
+Creating a scatter plot
+
+```{r}
+dfb %>% ggplot(aes(x= hour , y = Duration)) + geom_point()
+```
+Box plot
+
+How to plot a box and whiskers
+```{r}
+dfb %>% ggplot(aes( x = Duration, y = hour, group= hour)) + geom_boxplot()
+```
+
+How many bikes are being used at any given time of the day.
+
+### how many riders
+```{r}
+dfe=dfb %>% filter(mday(started_at)==3) %>% slice_sample(n=100)
+```
+
+select the columns we need 
+```{r}
+dfe %>% select(start=started_at,end=ended_at) %>%
+  pivot_longer(start:end) 
+```
+pivot longer so we can work with the data.
+```{r}
+dfe %>% select(start=started_at,end=ended_at) %>%
+  pivot_longer(start:end, names_to="type",values_to="t") %>% arrange(t)
+```
+createa  graph with the new longer data set.
+
+```{r}
+dfb %>% 
+  select(start=started_at,end=ended_at) %>%
+  pivot_longer(start:end, names_to="type",values_to="t") %>% arrange(t) %>%
+  mutate(increment=case_when(
+   type=="start"~1,
+   type=="end" ~ -1
+  )) %>%
+  mutate(riders=cumsum(increment)) %>% 
+  ggplot(aes(t,riders)) + geom_step() 
+```
+create a small sample to show the general shape of the graph.
+
+
+```{r}
+dfe %>% select(start=started_at,end=ended_at) %>%
+  pivot_longer(start:end, names_to="type",values_to="t") %>% arrange(t) %>%
+  mutate(increment=case_when(
+   type=="start"~1,
+   type=="end" ~ -1
+  )) %>%
+  mutate(riders=cumsum(increment)) %>% 
+  ggplot(aes(t,riders)) + geom_step()
+```
+creating a facet wrap graph to display each day of the month
+
+
+```{r}
+dfb %>% 
+  filter(month(started_at)==8,month(ended_at)==8) %>%
+  select(start=started_at,end=ended_at) %>%
+  pivot_longer(start:end, names_to="type",values_to="t") %>% arrange(t) %>%
+  mutate(increment=case_when(
+   type=="start"~1,
+   type=="end" ~ -1
+  )) %>%
+  mutate(riders=cumsum(increment)) %>% 
+  ggplot(aes(t,riders)) + geom_step() +
+  facet_wrap(~mday(t),scales = "free_x",ncol = 7)
+```
+
+Pivot longer
+
+one column the type and the other the "t"
+
+mutate to create an "increment" column ( +1 or -1)
+use case when
+
+arrange based on time 
+mutate bikes using cumsum
+
+```{r}
+dfb %>% 
+  filter(month(started_at)==8,month(ended_at)==8) %>%
+ select(rideable_type,start=started_at,end=ended_at) %>%
+  pivot_longer(start:end, names_to="type",values_to="t") %>% arrange(t) %>%
+  mutate(increment=case_when(
+   type=="start"~1,
+   type=="end" ~ -1
+  )) %>%
+  group_by(rideable_type) %>%
+  mutate(riders=cumsum(increment)) %>% filter(mday(t)<=7) %>%
+    ggplot(aes(t,riders,color=rideable_type)) + geom_step() +
+  facet_wrap(~mday(t),scales = "free_x",ncol = 7)
+```
+```{r}
+dfr = dfb %>% 
+  filter(month(started_at)==8,month(ended_at)==8) %>%
+ select(rideable_type,start=started_at,end=ended_at) %>%
+  pivot_longer(start:end, names_to="type",values_to="t") %>% arrange(t) %>%
+  mutate(increment=case_when(
+   type=="start"~1,
+   type=="end" ~ -1
+  )) %>%
+  group_by(rideable_type) %>%
+  mutate(riders=cumsum(increment))
+```
+
+Creating dfr1 to simplify the data
+
+```{r}
+dfr1 = dfb %>% 
+  filter(month(started_at)==8,month(ended_at)==8) %>%
+ select(start=started_at,end=ended_at) %>%
+  pivot_longer(start:end, names_to="type",values_to="t") %>% arrange(t) %>%
+  mutate(increment=case_when(
+   type=="start"~1,
+   type=="end" ~ -1
+  )) %>%
+  group_by() %>%
+  mutate(riders=cumsum(increment))
+```
+
+How many riders in an hour time interval. ( max)
+
+```{r}
+dfrh = dfr1 %>% group_by (hour(t)) %>%
+ summarise( max_riders = max(riders), ave=mean(riders))
+day
+```
+Creating a count of how many riders start and finish at each station.
+```{r}
+ dff=dfb %>%
+  group_by(start_station_id) %>%
+  summarise(amount_of_riders = n())
+```
+
+Creating the end station data
+
+```{r}
+dfh=dfb%>%
+    group_by(end_station_id) %>%
+  summarise(amount_of_riders = n())
+```
+
+Joining the data
+
+```{r}
+
+```
+
+

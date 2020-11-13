@@ -1,0 +1,261 @@
+---
+title: "Lab 04 - La Quinta is Spanish for 'next to Denny's', Pt. 1"
+subtitle: "Visualizing spatial data"
+output: 
+  tufte::tufte_html:
+    tufte_variant: "envisioned"
+    highlight: pygments
+    css: ../lab.css
+link-citations: yes
+---
+
+```{r include=FALSE}
+library(tufte)
+library(knitr)
+options(
+  htmltools.dir.version = FALSE, # for blogdown
+  show.signif.stars = FALSE,     # for regression output
+  digits = 2
+  )
+knitr::opts_chunk$set(eval = FALSE)
+```
+
+```{r fig.margin=TRUE, eval=TRUE, echo=FALSE}
+include_graphics("img/mitch-hedgeberg-lqd.jpg")
+```
+
+Have you ever taken a road trip in the US and thought to yourself "I wonder what La Quinta means". Well, the late comedian [Mitch Hedberg](https://en.wikipedia.org/wiki/Mitch_Hedberg) thinks it's Spanish for *next to Denny's*.
+
+If you're not familiar with these two establishments, [Denny's](https://www.dennys.com/) is a casual diner chain that is open 24 hours and [La Quinta Inn and Suites](http://www.lq.com/) is a hotel chain.
+
+These two establishments tend to be clustered together, or at least this observation is a joke made famous by Mitch Hedberg. In this lab we explore the validity of this joke and along the way learn some more data wrangling and tips for visualizing spatial data.
+
+The inspiration for this lab comes from a blog post by John Reiser on his *new jersey geographer* blog. You can read that analysis [here](http://njgeo.org/2014/01/30/mitch-hedberg-and-gis/). Reiser's blog post focuses on scraping data from Denny's and La Quinta Inn and Suites websites using Python. In this lab we focus on visualization and analysis of these data. However note that the data scraping was also done in R, and we we will discuss web scraping using R later in the course. But for now we focus on the data that has already been scraped and tidied for you.
+
+## Getting started
+
+### Packages
+
+In this lab we will use the **tidyverse** and **dsbox** packages.
+
+```{r eval = TRUE, message = FALSE}
+library(tidyverse) 
+library(dsbox) 
+```
+
+## Housekeeping
+
+### Project name
+
+Currently your project is called *Untitled Project*. Update the name of your project to be "Lab 03 - Visualizing spatial data".
+
+### Warm up
+
+**Pick one team member to complete the steps in this section while the others contribute to the discussion but do not actually touch the files on their computer.**
+
+Before we introduce the data, let's warm up with some simple exercises.
+
+### YAML
+
+Open the R Markdown (Rmd) file in your project, change the author name to your **team** name, and knit the document.
+
+### Commiting and pushing changes
+
+- Go to the **Git** pane in your RStudio. 
+- View the **Diff** and confirm that you are happy with the changes.
+- Add a commit message like "Update team name" in the **Commit message** box and hit **Commit**.
+- Click on **Push**. This will prompt a dialogue box where you first need to enter your user name, and then your password.
+
+### Pulling changes
+
+Now, the remaining team members who have not been concurrently making these changes on their projects should click on the **Pull** button in their Git pane and observe that the changes are now reflected on their projects as well.
+
+## The data
+
+The datasets we'll use are called `dennys` and `laquinta` from the **dsbox** package. Note that these data were scraped from [here](https://locations.dennys.com/) and [here](https://www.lq.com/en/findandbook/hotel-listings.html), respectively.
+
+To help with our analysis we will also use a dataset on US states:
+
+```{r}
+states <- read_csv("data/states.csv")
+```
+
+Each observation in this dataset represents a state, including DC. Along with the name of the state we have the two-letter abbreviation and we have the geographic area of the state (in square miles).
+
+## Exercises
+
+1. What are the dimensions of the Denny's dataset? (Hint: Use inline R code 
+   and functions like `nrow` and `ncol` to compose your answer.) What does 
+   each row in the dataset represent? What are the variables? 
+   
+   Each row is a different Denny's location. It has 6 different columns. These columns represent the address of each Denny's(address, city, State, zip code, latitude and longitude). there are 1643 Denny's recorded on this data set.
+```{r}
+dn = dennys
+ncol(dn)
+nrow(dn)
+```
+
+2. What are the dimensions of the La Quinta's dataset? What does each row 
+   in the dataset represent? What are the variables?
+   
+   This data has the same 6 variables as the Denny's data set. There are only 909 rows though compared to the 1643 rows of Denny's. Each row in this data set represents a La Quinta's geographical location.
+```{r}
+LQ = laquinta
+ncol(LQ)
+nrow(LQ)
+```
+
+We would like to limit our analysis to Denny's and La Quinta locations in the United States. 
+
+3. Take a look at the websites that the data come from (linked above). Are there any La Quinta's locations outside of the US? If so, which countries? What about Denny's?  
+
+La Quinta is locaed in several countries. These countries include Canada, Mexico, Honduras, Turkey and Chile. It does not appear that Denny's are located outside of the Us.
+
+4. Now take a look at the data. What would be some ways of determining whether or not either establishment has any locations outside the US using just the data (and not the websites). Don't worry about whether you know how to implement this, just brainstorm some ideas. Write down at least one as your answer, but you're welcomed to write down a few options too.
+
+You could possible plot them using a map produed by R. You would most likely be able to do this since you are given the latitude and longitude.
+
+Another possibility ould be looking at the states. Any that do not match up with the states diagram would be locations outside of the U.S.
+
+We will determine whether or not the establishment has a location outside the US using the `state` variable in the `dn` and `lq` datasets. We know exactly which states are in the US, and we have this information in the `states` dataframe we loaded.
+
+5. Find the Denny's locations that are outside the US, if any. To do so, filter the Denny's locations for observations where `state` is not in `states$abbreviation`. The code for this is given below. Note that the `%in%` operator matches the states listed in the `state` variable to those listed in `states$abbreviation`. The `!` operator means **not**. Are there any Denny's locations outside the US?
+
+there are not any denny's located outside the U.S.
+
+```{r}
+dn %>%
+  filter(!(state %in% states$abbreviation))
+```
+
+
+```{marginfigure}
+"Filter for `state`s that are not in `states$abbreviation`."
+```
+
+```{r}
+dn %>%
+  filter(!(state %in% states$abbreviation))
+```
+
+6. Add a country variable to the Denny's dataset and set all observations equal to `"United States"`. Remember, you can use the `mutate` function for adding a variable. Make sure to save the result of this as `dn` again so that the stored data frame contains the new variable going forward.
+
+```{marginfigure}
+We don't need to tell R how many times to repeat the character string "United States" to fill in the data for all observations, R takes care of that automatically.
+```
+
+```{r}
+DN=dn %>%
+  mutate(country = "United States")
+```
+
+7. Find the La Quinta locations that are outside the US, and figure out which country they are in. This might require some googling. Take notes, you will need to use this information in the next exercise.
+```{r}
+LQ %>%
+  filter(!(state %in% states$abbreviation))
+```
+
+Carretera Panamericana Sur KM 12 = Mexico
+Av. Tulum Mza. 14 S.M. 4 Lote 2 = Mexico
+Ejercito Nacional 8211 = Mexico
+Blvd. Aeropuerto 4001 = Mexico
+Carrera 38 # 26-13 Avenida las Palmas con Loma de San Julian El Poblado = Columbia
+AV. PINO SUAREZ No. 1001 = Mexico
+Av. Fidel Velazquez #3000 Col. Central = Mexico
+63 King Street East = Canada
+Calle Las Torres-1 Colonia Reforma = Mexico
+Blvd. Audi N. 3 Ciudad Modelo = Mexico
+Ave. Zeta del Cochero No 407 = Mexico
+Av. Benito Juarez 1230 B (Carretera 57) Col. Valle Dorado Zona Hotelera = Mexico
+Blvd. Fuerza Armadas = Honduras
+8640 Alexandra Rd	 = Canada
+
+8. Add a country variable to the La Quinta dataset. Use the `case_when` function to populate this variable. You'll need to refer to your notes from Exercise 7 about which country the non-US locations are in. Here is some starter code to get you going:
+```{r eval=FALSE}
+lq = LQ%>%
+  mutate(country = case_when(
+    state %in% state.abb     ~ "United States",
+    state %in% c("ON", "BC") ~ "Canada",
+    state == "ANT"           ~ "Colombia",
+    state == "AG" ~ "Mexico",
+    state == "FM"            ~ "Hondorus"
+  ))
+```
+
+`r newthought('Going forward')` we will work with the data from the United States only. All Denny's locations are in the United States, so we don't need to worry about them. However we do need to filter the La Quinta dataset for locations in United States.
+
+```{r}
+lq <- lq %>%
+  filter(country == "United States")
+```
+
+9. Which states have the most and fewest Denny's locations? What about La Quinta? Is this surprising? Why or why not?
+
+California has the most denny's at 403 and delaware has the least amount of Denny's at one.
+
+Florida has the most La Quinta and there are 3 states that don't have any La quintas. This is not that surprising considering Califronia and Florida are larger states. Delaware not having a lot is not surprising either since it is so small. 
+```{r}
+DN %>%
+  count(state)
+```
+
+Next, let's calculate which states have the most Denny's locations *per thousand square miles*. This requires *join*ining information from the frequency tables you created in Exercise 8 with information from the `states` data frame.
+
+First, we count how many observations are in each state, which will give us a data frame with two variables: `state` and `n`. Then, we join this data frame with the `states` data frame. However note that the variables in the `states` data frame that has the two-letter abbreviations is called `abbreviation`. So when we're joining the two data frames we specify that the `state` variable from the Denny's data should be matched `by` the `abbreviation` variable from the `states` data:
+
+```{r}
+dn %>%
+  count(state) %>%
+  inner_join(states, by = c("state" = "abbreviation"))
+```
+
+Before you move on the the next question, run the code above and take a look at the output. In the next exercise you will need to build on this pipe.
+
+10. Which states have the most Denny's locations per thousand square miles? What about La Quinta?
+
+Next, we put the two datasets together into a single data frame. However before we do so, we need to add an identifier variable. We'll call this `establishment` and set the value to `"Denny's"` and `"La Quinta"` for the `dn` and `lq` data frames, respectively.
+
+```{r}
+DN <- DN %>%
+  mutate(establishment = "Denny's")
+lq <- lq %>%
+  mutate(establishment = "La Quinta")
+```
+
+Since the two data frames have the same columns, we can easily bind them with the `bind_rows` function:
+
+```{r}
+dn_lq <- bind_rows(DN, lq)
+```
+
+We can plot the locations of the two establishments using a scatter plot, and color the points by the establishment type. Note that the latitude is plotted on the x-axis and the longitude on the y-axis.
+
+```{r}
+ggplot(dn_lq, mapping = aes(x = longitude, y = latitude, color = establishment)) +
+  geom_point()
+```
+
+The following two questions ask you to create visualizations. These should follow best practices you learned in class, such as informative titles, axis labels, etc. See http://ggplot2.tidyverse.org/reference/labs.html for help with the syntax. You can also choose different themes to change the overall look of your plots, see http://ggplot2.tidyverse.org/reference/ggtheme.html for help with these.
+
+11. Filter the data for observations in North Carolina only, and recreate the plot. You should also adjust the transparency of the points, by setting the `alpha` level, so that it's easier to see the overplotted ones. Visually, does Mitch Hedberg's joke appear to hold here?
+
+His joke seems to some what accurate as almost every single La Quinta is next to a Denny's.
+```{r}
+DNLQ = dn_lq %>%
+  filter( state == "NC" )
+ggplot(DNLQ, mapping = aes(x = longitude, y = latitude, color = establishment)) +
+  geom_point()
+```
+
+
+12. Now filter the data for observations in Texas only, and recreate the plot, with an appropriate `alpha` level. Visually, does Mitch Hedberg's joke appear to hold here?
+
+His joke is not as accurate here as there is a surplus of La quinta's. It appears they are just every where, including next to Denny's.
+```{r}
+DNLQ1 = dn_lq %>%
+  filter( state == "TX" )
+ggplot(DNLQ1, mapping = aes(x = longitude, y = latitude, color = establishment,)) +
+  geom_point()
+```
+
+That's it for now! In the next lab we will take a more quantitative approach to answering these questions.

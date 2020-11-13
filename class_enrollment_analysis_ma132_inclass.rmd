@@ -1,0 +1,63 @@
+---
+title: "Class enrollment Data:MA132"
+author: "Richard Pandel"
+date: "9/21/2020"
+output: html_notebook
+---
+
+The intention of this analysis is to accurately predict the amount of students who enroll into MA 132 next semester.
+
+
+
+prepare workplace
+
+## Load packages
+
+```{r}
+library(tidyverse)
+library(janitor)
+library(readxl)
+library(skimr)
+library(summarytools)
+```
+```{r}
+dfa= read_excel("CU_ACAD_DEPT_ENRL.XLSX") %>%
+  clean_names( )
+```
+```{r}
+skim(dfa)
+```
+
+### Tidy Data
+
+Let's separate column term2 into to variables
+
+```{r}
+dfb = dfa %>% separate (term2, into=c("semester","year")," ")
+```
+### clean and subset the data
+
+sd get rid of the following variables:
+
+*acad_org
+*current_status
+*Instructor
+*course_id
+
+Filtering to only include:
+
+*math courses
+*include catalog numbers for MA131 and 132
+```{r}
+dfc = dfb %>% select(-acad_org,-current_status,-instructor,-course_id) %>% 
+  filter(subject =="MA")
+  filter(catalog == ("131","132"))
+```
+Filtering to remove duplicates
+```{r}
+dfc<-subset(dfb, component!="DIS")
+```
+```{r}
+
+```
+
